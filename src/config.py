@@ -120,7 +120,14 @@ class AlertConfig:
     webhook_headers: Dict[str, str] = field(default_factory=dict)
     min_interval_seconds: int = 30
     severity_threshold: str = "medium"  # low, medium, high, critical
-    
+
+    # Switch WiFi (Norlink SWIGRF-16a y compatibles)
+    enable_switch: bool = False
+    switch_host: str = ""
+    switch_token: str = ""
+    switch_id: str = "1"
+    switch_severity_threshold: str = "high"
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "enable_console": self.enable_console,
@@ -139,6 +146,11 @@ class AlertConfig:
             "webhook_headers": dict(self.webhook_headers) if self.webhook_headers else {},
             "min_interval_seconds": self.min_interval_seconds,
             "severity_threshold": self.severity_threshold,
+            "enable_switch": self.enable_switch,
+            "switch_host": self.switch_host,
+            "switch_token": self.switch_token,
+            "switch_id": self.switch_id,
+            "switch_severity_threshold": self.switch_severity_threshold,
         }
     
     @classmethod
@@ -160,6 +172,11 @@ class AlertConfig:
             webhook_headers=data.get("webhook_headers", {}),
             min_interval_seconds=data.get("min_interval_seconds", 30),
             severity_threshold=data.get("severity_threshold", "medium"),
+            enable_switch=data.get("enable_switch", False),
+            switch_host=data.get("switch_host", ""),
+            switch_token=data.get("switch_token", ""),
+            switch_id=str(data.get("switch_id", "1")),
+            switch_severity_threshold=data.get("switch_severity_threshold", "high"),
         )
 
 

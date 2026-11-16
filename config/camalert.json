@@ -55,7 +55,12 @@
     "webhook_url": "",
     "webhook_headers": {},
     "min_interval_seconds": 30,
-    "severity_threshold": "medium"
+    "severity_threshold": "medium",
+    "enable_switch": false,
+    "switch_host": "",
+    "switch_token": "",
+    "switch_id": "1",
+    "switch_severity_threshold": "high"
   },
   "last_updated": ""
 }

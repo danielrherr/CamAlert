@@ -18,6 +18,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from src.events import BaseEvent
+from src.switch_controller import (
+    SEVERITY_ORDER,
+    SmartSwitch,
+    SwitchController,
+    severity_rank,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +113,13 @@ class AlertConfig:
     # Severity thresholds
     severity_threshold: AlertSeverity = AlertSeverity.MEDIUM  # Minimum severity to trigger
 
+    # Switch WiFi (canal de automatización física)
+    enable_switch: bool = False
+    switch_host: str = ""
+    switch_token: str = ""
+    switch_id: str = "1"
+    switch_severity_threshold: AlertSeverity = AlertSeverity.HIGH
+
 
 @dataclass
 class AlertResult:
@@ -115,16 +128,51 @@ class AlertResult:
     success: bool
     channel: str
     response: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
 
 
 class AlertManager:
     """Gestor de alertas con múltiples canales de notificación."""
     
-    def __init__(self, config: AlertConfig):
+    def __init__(self, config: AlertConfig, switch_controller: Optional[Any] = None):
         self.config = config
+        # Normalizar umbral: aceptar Enum o string, comparar siempre ordinalmente
+        self.config.severity_threshold = self._coerce_severity(
+            self.config.severity_threshold, AlertSeverity.MEDIUM
+        )
+        self.config.switch_severity_threshold = self._coerce_severity(
+            self.config.switch_severity_threshold, AlertSeverity.HIGH
+        )
         self._sent_timestamps: Dict[str, datetime] = {}  # alert_id -> timestamp
         self._event_cooldowns: Dict[str, datetime] = {}  # event_type_timestamp
-        
+        self.switch_controller = switch_controller or self._build_switch_controller()
+
+    @staticmethod
+    def _coerce_severity(value: Any, default: AlertSeverity) -> AlertSeverity:
+        """Convertir string/Enum a AlertSeverity."""
+        if isinstance(value, AlertSeverity):
+            return value
+        try:
+            return AlertSeverity(str(value))
+        except ValueError:
+            logger.warning(f"Severidad desconocida {value!r}, usando {default.value}")
+            return default
+
+    def _build_switch_controller(self) -> Optional[SwitchController]:
+        """Crear el controller de switch si la configuración lo habilita."""
+        if not (self.config.enable_switch and self.config.switch_host):
+            return None
+        switch = SmartSwitch(
+            host=self.config.switch_host,
+            token=self.config.switch_token,
+            switch_id=self.config.switch_id,
+        )
+        return SwitchController(
+            switch,
+            threshold=self.config.switch_severity_threshold.value,
+            min_interval_seconds=self.config.min_interval_seconds,
+        )
+
     def _check_cooldown(self, alert: Alert, event_type: str) -> bool:
         """Verificar si pasó suficiente tiempo desde la última alerta similar."""
         now = datetime.now()
@@ -179,27 +227,56 @@ class AlertManager:
             result = await self._send_webhook(alert)
             results.append(result)
         
-        # Actualizar estado basado en resultados
-        all_success = all(r.success for r in results)
+        # Switch WiFi (automatización física) — no bloquea la alerta si falla
+        switch_result: Optional[AlertResult] = None
+        if self.config.enable_switch and self.switch_controller is not None:
+            if severity_rank(alert.severity) >= severity_rank(self.config.switch_severity_threshold):
+                switch_result = await self._send_switch(alert)
+
+        # Actualizar estado basado en resultados (el switch no cuenta como falla)
+        all_success = all(r.success for r in results) if results else (
+            switch_result.success if switch_result is not None else False
+        )
+        channels = [r.channel for r in results]
+        if switch_result is not None:
+            channels.append(switch_result.channel)
         
-        if all_success and results:
+        if all_success:
             alert.mark_sent()
             self._sent_timestamps[alert.id] = datetime.now()
         else:
-            # Marcar como fallida si algún canal falló
+            # Marcar como fallida si algún canal de notificación falló
             failure_reasons = [r.error or "unknown" for r in results if not r.success]
             alert.mark_failed("; ".join(failure_reasons))
         
-        return AlertResult(alert_id=alert.id, success=all_success, channel=", ".join(r.channel for r in results))
+        return AlertResult(alert_id=alert.id, success=all_success, channel=", ".join(channels))
     
     def _should_send(self, alert: Alert) -> bool:
-        """Verificar si la alerta debería enviarse basándose en severidad."""
-        if alert.severity.value < self.config.severity_threshold.value:
+        """Verificar si la alerta debería enviarse basándose en severidad ordinal."""
+        if severity_rank(alert.severity) < severity_rank(self.config.severity_threshold):
             logger.debug(
                 f"Alerta {alert.id} abaixo del threshold {self.config.severity_threshold.value}: {alert.severity.value}"
             )
             return False
         return True
+
+    async def _send_switch(self, alert: Alert) -> AlertResult:
+        """Activar el switch físico como canal de automatización."""
+        try:
+            activated = await self.switch_controller.trigger(alert.severity)
+            if activated:
+                logger.info(f"[ALERT {alert.severity.value.upper()}] Switch activado: {alert.title}")
+                return AlertResult(alert_id=alert.id, success=True, channel="switch")
+            logger.warning("✗ Switch no activado, alerta continuando por otros canales")
+            return AlertResult(
+                alert_id=alert.id,
+                success=False,
+                channel="switch",
+                error="Switch no activado",
+            )
+        except Exception as e:
+            logger.error(f"✗ Error activando switch: {e}")
+            return AlertResult(alert_id=alert.id, success=False, channel="switch", error=str(e))
     
     async def _send_console(self, alert: Alert) -> AlertResult:
         """Enviar alerta a consola."""
