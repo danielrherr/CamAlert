@@ -1,0 +1,61 @@
+{
+  "version": "0.1.1",
+  "cameras": {
+    "cam-imou-bullet-2e": {
+      "id": "cam-imou-bullet-2e",
+      "name": "Imou Bullet 2e",
+      "host": "192.168.1.100",
+      "mac_address": "F4:5C:89:A2:3B:1C",
+      "username": "admin",
+      "password": "admin",
+      "stream_type": "main",
+      "port": 554,
+      "enabled": true,
+      "zones": [
+        {"x": 0, "y": 0, "width": 1920, "height": 1080}
+      ]
+    },
+    "cam-imou-cruiser-se": {
+      "id": "cam-imou-cruiser-se",
+      "name": "Imou Cruiser SE+",
+      "host": "192.168.1.101",
+      "mac_address": "F4:5C:89:A2:3B:1D",
+      "username": "admin",
+      "password": "admin",
+      "stream_type": "main",
+      "port": 554,
+      "enabled": true,
+      "zones": [
+        {"x": 0, "y": 0, "width": 1280, "height": 720}
+      ]
+    }
+  },
+  "event": {
+    "motion_threshold": 25,
+    "motion_min_area": 500,
+    "face_detection": false,
+    "zone_monitoring": true,
+    "zones": [
+      {"x": 0, "y": 0, "width": 1920, "height": 1080}
+    ]
+  },
+  "alerts": {
+    "enable_console": true,
+    "enable_email": false,
+    "enable_telegram": false,
+    "enable_webhook": false,
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 587,
+    "smtp_username": "",
+    "smtp_password": "",
+    "email_from": "",
+    "email_to": [],
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
+    "webhook_url": "",
+    "webhook_headers": {},
+    "min_interval_seconds": 30,
+    "severity_threshold": "medium"
+  },
+  "last_updated": ""
+}
