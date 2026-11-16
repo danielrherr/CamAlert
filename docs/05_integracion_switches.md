@@ -250,25 +250,25 @@ flowchart TD
 ## 5.6 Próximos Pasos de Implementación
 
 ### Fase 1: Módulo Básico (1-2 días)
-- [ ] Crear `src/switch_controller.py` con clase `SmartSwitch`
-- [ ] Probar conexión HTTP a switch en red local
-- [ ] Verificar encendido/apagado funcional
-- [ ] Loguear resultados en consola
+- [x] Crear `src/switch_controller.py` con clase `SmartSwitch`
+- [x] Verificar encendido/apagado y estado contra un servidor HTTP local (tests)
+- [x] Loguear resultados en consola
+- [ ] Probar conexión HTTP a switch real en red local
 
 ### Fase 2: Integración con Alerts (2-3 días)
-- [ ] Actualizar `src/alerts.py`:
+- [x] Actualizar `src/alerts.py`:
   - Agregar `enable_switch` en `AlertConfig`
   - Agregar parámetros `switch_host`, `switch_token`, `switch_id`, `switch_severity_threshold`
   - Modificar `AlertManager.send()` para incluir canal switch
-- [ ] Actualizar `src/config.py`:
+- [x] Actualizar `src/config.py`:
   - Agregar campos nuevos a `AlertConfig` dataclass
   - Actualizar `CamAlertConfig.from_dict()` / `to_dict()`
-- [ ] Probar flujo movimiento → switch → físico activation
+- [x] Probar flujo movimiento → alerta → activación (con switch simulado)
 
 ### Fase 3: Testing y Validación (1-2 días)
 - [ ] Configurar switch real en red local
-- [ ] Ejecutar tests: encendido, apagado, cooldown, threshold
-- [ ] Validar fallbacks: switch offline, token inválido, network down
+- [x] Ejecutar tests: encendido, apagado, cooldown, threshold
+- [x] Validar fallbacks: switch offline, token inválido, network down
 - [ ] Documentar configuración para usuario final
 
 ### Fase 4: Release (1 día)

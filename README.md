@@ -41,10 +41,38 @@ Por definir (pending definition):
 - [ ] Detección de caras desconocidas
 - [ ] Áreas de interés cruzadas
 
+## Automatización con Switch WiFi (opcional)
+
+CamAlert puede energizar un relay físico (Norlink SWIGRF-16a o compatible) cuando una
+alerta alcanza el umbral configurado. Se configura en la sección `alerts`:
+
+```json
+{
+  "alerts": {
+    "enable_switch": true,
+    "switch_host": "192.168.1.200",
+    "switch_token": "YOUR_AUTH_TOKEN",
+    "switch_id": "1",
+    "switch_severity_threshold": "high"
+  }
+}
+```
+
+El switch se apaga automáticamente después de `min_interval_seconds`. Si el switch no
+responde, la alerta continúa por los demás canales (fallo seguro).
+
 ## Estado Actual
-- [ ] Proyecto inicializado
-- [ ] Investigación de APIs en curso
-- [ ] Arquitectura en definición
+- [x] Proyecto inicializado
+- [x] Análisis de protocolos y arquitectura documentada (`docs/`)
+- [x] Módulos `switch_controller` y `discovery_manager` implementados con tests
+- [ ] Validación con cámaras y switch reales en red local
+
+## Tests
+
+```bash
+python3 -m unittest discover -s tests -v   # unitarios + integración HTTP local
+python3 test_basic.py                      # smoke test del sistema base
+```
 
 ## Requisitos
 - Python 3.9+
